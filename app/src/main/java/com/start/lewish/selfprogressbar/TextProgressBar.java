@@ -23,16 +23,15 @@ public class TextProgressBar extends View {
     private final Paint mLinesPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private final float m1Dip;
-    private final float m1Sp;
+    private final float mDensity;
+    private final float mScaledDensity;
     private int mProgress;
     private int mMax;
 
     private int mPrimaryColor;
     private int mSecondaryColor;
-    private ProgressFormatter mFormatter;
-
     private final Rect mBounds = new Rect();
+
     public TextProgressBar(final Context context) {
         this(context, null);
     }
@@ -47,13 +46,13 @@ public class TextProgressBar extends View {
             final int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
-        m1Dip = getResources().getDisplayMetrics().density;
-        m1Sp = getResources().getDisplayMetrics().scaledDensity;
+        mDensity = getResources().getDisplayMetrics().density;
+        mScaledDensity = getResources().getDisplayMetrics().scaledDensity;
 
         int max = 0;
         int progress = 0;
 
-        float strokeWidth = dips(8);
+        float strokeWidth = dp2px(8);
 
         int primaryColor = 0xFF009688;
         int secondaryColor = 0xFFDADADA;
@@ -85,11 +84,11 @@ public class TextProgressBar extends View {
 
         mLinesPaint.setStrokeWidth(strokeWidth);
         mLinesPaint.setStyle(Paint.Style.STROKE);
-        mLinesPaint.setStrokeCap(Paint.Cap.ROUND);
+        mLinesPaint.setStrokeCap(Paint.Cap.SQUARE);
 
 
         mTextPaint.setColor(Color.WHITE);
-        mTextPaint.setTextSize(sp(18));
+        mTextPaint.setTextSize(sp2px(18));
         mTextPaint.setTextAlign(Paint.Align.CENTER);
         mTextPaint.setTypeface(Typeface.create("sans-serif-condensed-light", 0));
 
@@ -118,16 +117,14 @@ public class TextProgressBar extends View {
     @Override
     protected synchronized void onDraw(final Canvas canvas) {
 
-        final float radius = getStrokeWidth() / 2;
         final float bubbleDisplacement = getBubbleVerticalDisplacement();
-        final float top = getPaddingTop() + radius + bubbleDisplacement;
-        final float left = getPaddingLeft() + radius;
-        final float end = getWidth() - getPaddingRight() - radius;
+        final float top = getPaddingTop() + bubbleDisplacement;
+        final float left = getPaddingLeft();
+        final float end = getWidth() - getPaddingRight();
 
         final float max = getMax();
         final float offset = (max == 0) ? 0 : (getProgress() / max);
-        final float progressEnd =
-                clamp(lerp(left, end, offset), left, end);
+        final float progressEnd = clamp(lerp(left, end, offset), left, end);
 
         // Draw the secondary background line
         mLinesPaint.setColor(mSecondaryColor);
@@ -135,13 +132,7 @@ public class TextProgressBar extends View {
 
         // Draw the primary progress line
         mLinesPaint.setColor(mPrimaryColor);
-        if (progressEnd == left) {
-            // Draw the highlghted part as small as possible
-            mLinesPaint.setStyle(Paint.Style.FILL);
-            canvas.drawCircle(left, top, radius, mLinesPaint);
-            mLinesPaint.setStyle(Paint.Style.STROKE);
-
-        } else {
+        if (progressEnd != left) {
             canvas.drawLine(left, top, progressEnd, top, mLinesPaint);
         }
 
@@ -161,18 +152,9 @@ public class TextProgressBar extends View {
         final int saveCount = canvas.save();
         canvas.translate(bubbleLeft, bubbleTop);
 
-//        canvas.drawPath(mBubble, mBubblePaint);
-
-        // Draw the triangle part of the bubble
-        final float triangleTop = bubbleHeight;
-        final float triangleLeft = clamp(
-                progressEnd - (getTriangleWidth() / 2) - bubbleLeft,
-                0,
-                getWidth() - getTriangleWidth());
-
         // Draw the progress text part of the bubble
         final float textX = bubbleWidth / 2;
-        final float textY = bubbleHeight - dips(8);
+        final float textY = bubbleHeight - dp2px(8);
 
         canvas.drawText(progress, textX, textY, mTextPaint);
 
@@ -185,37 +167,24 @@ public class TextProgressBar extends View {
      * @return
      */
     private float getBubbleVerticalDisplacement() {
-        return getBubbleMargin() + getBubbleHeight() + getTriangleHeight();
+        return getBubbleMargin() + getBubbleHeight();
     }
 
     public float getBubbleMargin() {
-        return dips(4);
+        return dp2px(4);
     }
 
     public float getBubbleWidth() {
-        return mBounds.width() + /* padding */ dips(16);
+        return mBounds.width() + /* padding */ dp2px(16);
     }
 
     public float getBubbleHeight() {
-        return mBounds.height() + /* padding */ dips(16);
-    }
-
-    public float getTriangleWidth() {
-        return dips(12);
-    }
-
-    public float getTriangleHeight() {
-        return dips(0);
+        return mBounds.height() + /* padding */ dp2px(16);
     }
 
     public String getBubbleText() {
-        if (mFormatter != null) {
-            return mFormatter.getFormattedText(getProgress(), getMax());
-
-        } else {
-            final int progress = (int) (100 * getProgress() / (float) getMax());
-            return progress + "%";
-        }
+        final int progress = (int) (100 * getProgress() / (float) getMax());
+        return "已完成" + progress + "%";
     }
 
     public synchronized void setProgress(int progress) {
@@ -320,13 +289,6 @@ public class TextProgressBar extends View {
         return new Paint(mTextPaint);
     }
 
-    public void setProgressFormatter(final ProgressFormatter formatter) {
-        mFormatter = formatter;
-
-        requestLayout();
-        invalidate();
-    }
-
     private float clamp(final float value, final float min, final float max) {
         return Math.max(min, Math.min(max, value));
     }
@@ -335,11 +297,15 @@ public class TextProgressBar extends View {
         return (t == 1) ? v1 : (v0 + t * (v1 - v0));
     }
 
-    private float dips(final float dips) {
-        return dips * m1Dip;
+    private float dp2px(final float dips) {
+        return dips * mDensity;
     }
 
-    private float sp(final int sp) {
-        return sp * m1Sp;
+    public int px2dip(float pxValue) {
+        return (int) (pxValue / mDensity + 0.5f);
+    }
+
+    private float sp2px(final int sp) {
+        return sp * mScaledDensity;
     }
 }

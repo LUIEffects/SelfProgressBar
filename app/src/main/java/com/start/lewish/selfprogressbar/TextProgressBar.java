@@ -30,7 +30,7 @@ public class TextProgressBar extends View {
 
     private int mPrimaryColor;
     private int mSecondaryColor;
-    private final Rect mBounds = new Rect();
+    private final Rect mTextBounds = new Rect();
 
     public TextProgressBar(final Context context) {
         this(context, null);
@@ -52,7 +52,7 @@ public class TextProgressBar extends View {
         int max = 0;
         int progress = 0;
 
-        float strokeWidth = dp2px(8);
+        float strokeWidth = dp2px(3);
 
         int primaryColor = 0xFF009688;
         int secondaryColor = 0xFFDADADA;
@@ -101,7 +101,7 @@ public class TextProgressBar extends View {
     protected synchronized void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
         // Recalculate how tall the text needs to be, width is ignored
         final String progress = getBubbleText();
-        mTextPaint.getTextBounds(progress, 0, progress.length(), mBounds);
+        mTextPaint.getTextBounds(progress, 0, progress.length(), mTextBounds);
 
         final int bubbleHeight = (int) Math.ceil(getBubbleVerticalDisplacement());
 
@@ -137,18 +137,14 @@ public class TextProgressBar extends View {
         }
 
         final String progress = getBubbleText();
-        mTextPaint.getTextBounds(progress, 0, progress.length(), mBounds);
+        mTextPaint.getTextBounds(progress, 0, progress.length(), mTextBounds);
 
         // Draw the bubble text background
         final float bubbleWidth = getBubbleWidth();
         final float bubbleHeight = getBubbleHeight();
 
         final float bubbleTop = 0;
-        final float bubbleLeft = clamp(
-                progressEnd - (bubbleWidth / 2),
-                0,
-                getWidth() - bubbleWidth);
-
+        final float bubbleLeft = clamp(progressEnd - (bubbleWidth / 2), 0, getWidth() - bubbleWidth);
         final int saveCount = canvas.save();
         canvas.translate(bubbleLeft, bubbleTop);
 
@@ -175,11 +171,11 @@ public class TextProgressBar extends View {
     }
 
     public float getBubbleWidth() {
-        return mBounds.width() + /* padding */ dp2px(16);
+        return mTextBounds.width() + /* padding */ dp2px(16);
     }
 
     public float getBubbleHeight() {
-        return mBounds.height() + /* padding */ dp2px(16);
+        return mTextBounds.height() + /* padding */ dp2px(16);
     }
 
     public String getBubbleText() {

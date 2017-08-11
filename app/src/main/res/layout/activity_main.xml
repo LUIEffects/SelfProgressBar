@@ -13,6 +13,7 @@
         android:padding="8dp">
 
         <com.start.lewish.selfprogressbar.TextProgressBar
+            android:id="@+id/mTextProgressBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:max="1000" />
